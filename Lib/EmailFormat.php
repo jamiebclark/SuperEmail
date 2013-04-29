@@ -26,15 +26,15 @@ class EmailFormat {
 
 	function absoluteUrls($text) {
 		$find = array(
-			'@(<a[^>]+href="/)([^\"]*)("[^>]*>)@e',
-			'@(<img[^>]+src="/)([^\"]*)("[^>]*>)@e',
+			'@(<a[^>]+href=")(/)([^\"]*)("[^>]*>)@e',
+			'@(<img[^>]+src=")(/)([^\"]*)("[^>]*>)@e',
 		);
 		if (defined('FULL_BASE_URL')) {
-			$replace = '"$1' . FULL_BASE_URL . '$2$3";';
+			$replace = '"$1' . FULL_BASE_URL . '/$3$4";';
 		} else {
-			$replace = '"$1" . Router::url("$2", true) . "$3";';
+			$replace = '"$1" . Router::url("$3", true) . "$4";';
 		}
-		return preg_replace($find, $replace, $text);
+		return  preg_replace($find, $replace, $text);
 	}
 
 	function linewrap($text, $width, $break = "\n", $cut = false) {
@@ -64,7 +64,7 @@ class EmailFormat {
 		$text = EmailFormat::absoluteUrls($text);
 		
 		//Block-level HTML items
-		$blocks = array('div','li','ul','td','tr','th','p','dd','h[\d]');
+		$blocks = array('div','li','ul','td','tr','th','p','dd','h[\d]','br','hr');
 		//Uppercase HTML elements
 		$uppers = array('h[\d]','dt','th');
 		
@@ -81,7 +81,7 @@ class EmailFormat {
 		
 		$replace = array(
 			'/([\{\}\$])/' => '\\$1',
-			'@(<[/]{0,1}(' . implode('|',$blocks) . ')>)@ms' => '$1' . $eol,
+			'@(<[/]{0,1}(' . implode('|',$blocks) . ')[/]{0,1}>)@ms' => '$1' . $eol,
 			'/(\<img([^>]+)>)/' => '[IMAGE]',
 			'/<a[\s+]href="([^\"]*)"[^>]*>http:(.*)<\/a>/' => '[ $1 ]',
 			'/<a[\s+]href="([^\"]*)"[^>]*>(.*)<\/a>/e' => '"[" . $urlIds["$1"] . "] $2 "',	//
@@ -104,7 +104,7 @@ class EmailFormat {
 			}
 		}
 		$text = preg_replace("/([$eol]{3,})/", $eol . $eol, $text);
-		return stripslashes($text);
+		return trim(stripslashes($text));
 	}
 	
 	function getBodyTag($text) {
