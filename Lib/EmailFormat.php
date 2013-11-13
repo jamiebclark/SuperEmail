@@ -7,12 +7,12 @@ class EmailFormat {
 		static $instance = array();
 
 		if (!$instance) {
-			$instance[0] =& new EmailFormat();
+			$instance[0] = new EmailFormat();
 		}
 		return $instance[0];
 	}
 
-	function html($text, $style = array()) {
+	public static function html($text, $style = array()) {
 		$text = EmailFormat::getBodyTag($text);
 		$text = EmailFormat::absoluteUrls($text);
 		$text = EmailFormat::replaceCssWithStyle($text, $style);
@@ -20,11 +20,11 @@ class EmailFormat {
 		return $text;
 	}
 	
-	function text($text) {
+	public static  function text($text) {
 		return EmailFormat::htmlToText($text);
 	}
 
-	function absoluteUrls($text) {
+	public static  function absoluteUrls($text) {
 		$find = array(
 			'@(<a[^>]+href=")(/)([^\"]*)("[^>]*>)@e',
 			'@(<img[^>]+src=")(/)([^\"]*)("[^>]*>)@e',
@@ -37,7 +37,7 @@ class EmailFormat {
 		return  preg_replace($find, $replace, $text);
 	}
 
-	function linewrap($text, $width, $break = "\n", $cut = false) {
+	public static function linewrap($text, $width, $break = "\n", $cut = false) {
 		$array = explode("\n", $text);
 		$text = "";
 		foreach($array as $key => $val) {
@@ -47,7 +47,7 @@ class EmailFormat {
 		return $text;
 	}
 	
-	function replaceCssWithStyle($text, $style = array()) {
+	public static function replaceCssWithStyle($text, $style = array()) {
 		$tags = array('h1', 'h2', 'h3', 'h4', 'p', 'a', 'blockquote');
 		$replace = array();
 		foreach ($tags as $tag) {
@@ -58,7 +58,7 @@ class EmailFormat {
 		return preg_replace(array_keys($replace), $replace, $text);
 	}
 
-	function htmlToText($text) {
+	public static function htmlToText($text) {
 		$eol = EmailFormat::EOL;
 		$text = EmailFormat::getBodyTag($text);
 		$text = EmailFormat::absoluteUrls($text);
@@ -107,11 +107,10 @@ class EmailFormat {
 		return trim(stripslashes($text));
 	}
 	
-	function getBodyTag($text) {
+	public static function getBodyTag($text) {
 		if (preg_match('@<body>[\r\n]*(.*?)[\r\n]*</body>@ms', $text, $matches)) {
 			$text = $matches[1];
 		}
 		return str_replace(array("\t","\n","\r"), '', $text);
 	}
-
 }
