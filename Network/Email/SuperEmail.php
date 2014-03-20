@@ -38,6 +38,7 @@ class SuperEmail extends CakeEmail {
  *
  * @param string $template The name of the template file, found in "Elements/both"
  * @param string $layout The name of the layout. Defaults to "default"
+ *
  * @return bool True on success
  **/
 	public function templateBoth($template, $layout = false) {
@@ -52,10 +53,16 @@ class SuperEmail extends CakeEmail {
 /**
  * Extends existing helpers function to also include default helpers
  *
- * @param array|null $helpers List of helpers to include
+ * @param array|string|null $helpers List of helpers to include
+ *
  * @return bool True on success
  **/
 	public function setHelpers($helpers = null) {
+		//Parses a string of multiple helpers
+		if (!empty($helpers) && !is_array($helpers)) {
+			preg_match('/[a-zA-Z_0-9]+/', $helpers, $helpers);
+		}
+
 		if (!$this->_defaultHelpersSet) {
 			$helpers = $this->_getDefaultHelpers($helpers);
 			$this->_defaultHelpersSet = true;
@@ -147,6 +154,10 @@ class SuperEmail extends CakeEmail {
 		return $this->template(null, $layout);
 	}
 
+	public function getHelper($helper) {
+		return $this->_loadHelper($helper);
+	}
+	
 	/*
 	public function parseHelpers($helpers = array()) {
 		if (!is_array($helpers)) {
@@ -164,6 +175,7 @@ class SuperEmail extends CakeEmail {
 	}
 	*/
 	
+	//Adds a helper to the View
 	private function _loadHelper($helper) {
 		$View = $this->_getView();
 		App::uses($helper, 'Helper');
