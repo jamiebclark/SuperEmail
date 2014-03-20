@@ -1,17 +1,24 @@
 <?php
 class EmailHelper extends AppHelper {
-	var $name = 'Email';
+	public $name = 'Email';
 	
-	var $helpers = array(
+	public $helpers = array(
 		'Html',
 		'Layout.DisplayText',
 	);
+	
+	const PHP_TAG_REG = '@<\?php(.+?)\?>@is';
 	
 	function __construct($View, $settings = array()) {
 		if (!empty($settings['helpers'])) {
 			$this->helpers = array_merge($this->helpers, (array) $settings['helpers']);
 		}
 		parent::__construct($View, $settings);
+	}
+	
+	public function beforeRender($viewFile) {
+		$this->Html->css('SuperEmail.style', null, array('inline' => false));
+		return parent::beforeRender($viewFile);
 	}
 	
 	function display($text, $format = 'html', $options = array()) {
@@ -28,6 +35,10 @@ class EmailHelper extends AppHelper {
 			$text = $this->textHtml($text);
 		} else {
 			$text = $this->text($text);
+		}
+		
+		if (Param::keyCheck($options, 'phpPreview', true)) {
+			$text = $this->phpPreview($text);
 		}
 		
 		/*
@@ -65,6 +76,19 @@ class EmailHelper extends AppHelper {
 		return $this->Html->link($title, $url, $options, $confirm);
 	}
 
+	public function phpPreview($body) {
+		if (preg_match_all(self::PHP_TAG_REG, $body, $matches)) {
+			$replace = array();
+			foreach ($matches[0] as $k => $match) {
+				$code = $matches[0][$k];
+				$code = preg_replace('/<br[\s\/]*>/', '', $code);
+				$replace[$match] = $this->Html->div('phpcode', highlight_string($code, true));
+			}
+			$body = str_replace(array_keys($replace), $replace, $body);
+		}
+		return $body;	
+	}
+	
 	function evalVars($text) {
 		extract($this->viewVars);
 		$text = str_replace('"', '\\"', $text);
@@ -119,6 +143,19 @@ class EmailHelper extends AppHelper {
 		} else {
 			$urlIds = array();
 		}
+		
+		//Removes PHP tags to prevent them being overwritten
+		$preserve = array();
+		$preserveReplace = array();
+		if (preg_match_all(self::PHP_TAG_REG, $text, $matches)) {
+			foreach ($matches[0] as $k => $match) {
+				$rep = '###PRESERVE' . $k . '###';
+				$preserve[$k] = $match;
+				$preserveReplace[$match] = $rep;
+			}
+			$text = str_replace(array_keys($preserveReplace), $preserveReplace, $text);
+		}	
+		
 		$urlCount = 0;
 		$replace = array(
 			'/([\{\}\$])/' => '\\$1',
@@ -148,12 +185,18 @@ class EmailHelper extends AppHelper {
 			}
 		}
 		$text = preg_replace("/([$eol]{3,})/", $eol . $eol, $text);
+		
+		//Adds preserved tags back in
+		if (!empty($preserveReplace)) {
+			$text = str_replace($preserveReplace, array_keys($preserveReplace), $text);
+		}
+		
 		return stripslashes($text);
 	}
 	
 	//Formats text for being displayed in Plain-text emails, but then re-formats to be displayed in an HTML page
 	function textHtml($text) {
-		return $this->Html->tag('code', nl2br($this->text($text)));
+		return sprintf('<div class="emaildisplay emaildisplay-text"><code>%s</code></div>', nl2br($this->text($text)));
 	}
 		
 	function _linewrap($text, $width, $break = "\n", $cut = false) {
