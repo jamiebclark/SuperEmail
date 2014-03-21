@@ -100,6 +100,9 @@ class SuperEmail extends CakeEmail {
 		if (empty($altContent)) {
 			$altContent = $content;
 		}
+		
+		$this->_viewRender = 'SuperEmail.SuperEmail';
+		
 		$this->template('SuperEmail.content', $layout);
 		$this->viewVars(compact('content', 'altContent'));
 		return $this;
@@ -113,7 +116,7 @@ class SuperEmail extends CakeEmail {
  * @param string $content The content passed in from send() in most cases.
  * @return array The rendered content with html and text keys.
  */
-	protected function _renderTemplates2($content) {
+	protected function _renderTemplates($content) {
 		$rendered = parent::_renderTemplates($content);
 		if (isset($rendered['html'])) {
 			$rendered['html'] = EmailFormat::html($rendered['html']);

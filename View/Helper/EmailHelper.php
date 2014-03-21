@@ -1,4 +1,6 @@
 <?php
+App::uses('EmailFormat', 'SuperEmail.Lib');
+
 class EmailHelper extends AppHelper {
 	public $name = 'Email';
 	
@@ -59,7 +61,7 @@ class EmailHelper extends AppHelper {
 			$url = Router::url('/img/' . $url, true);
 		}
 		if (!empty($options['url'])) {
-			$options['url'] = $this->_url($options['url']);
+			$options['url'] = EmailFormat::url($options['url']);
 		}
 		if (empty($options['style'])) {
 			$options['style'] = '';
@@ -72,7 +74,7 @@ class EmailHelper extends AppHelper {
 	}
 	
 	function link($title, $url, $options = array(), $confirm = null) {
-		$url = $this->_url($url);
+		$url = EmailFormat::url($url);
 		return $this->Html->link($title, $url, $options, $confirm);
 	}
 
@@ -101,97 +103,12 @@ class EmailHelper extends AppHelper {
 	 *
 	 **/
 	function html($text, $style = array()) {
-		$text = $this->replaceCssWithStyle($text, $style);
-		$text = $this->setAbsoluteUrls($text);
-		return $text;
-	}
-	
-	function replaceCssWithStyle($text, $style = array()) {
-		$tags = array('h1', 'h2', 'h3', 'h4', 'p', 'a', 'blockquote');
-		$replace = array();
-		foreach ($tags as $tag) {
-			if (!empty($style[$tag])) {
-				$replace['#(<' . $tag . ')([^>]*)(>)#'] = '$1 style="' . $style[$tag] . '"$2$3';
-			}
-		}
-		return preg_replace(array_keys($replace), $replace, $text);
-	}
-	
-	function setAbsoluteUrls($text) {
-		return preg_replace(
-			array(
-				'@(<a[^>]+href=")([^\"]*)("[^>]*>)@e',
-				'@(<img[^>]+src=")([^\"]*)("[^>]*>)@e',
-			),
-			'"$1" . $this->_url("$2") . "$3";', 
-			$text
-		);
+		return EmailFormat::html($text, $style);
 	}
 	
 	//Formats text for being displayed in a Plain-text email.
 	function text($text) {
-		$eol = "\r\n";
-		
-		$text = $this->setAbsoluteUrls($text);
-		
-		//$text = preg_replace('/[\[\]\{\}]/', '\\\\$0', $text);
-		preg_match_all('/<a[\s+]href="([^\"]*)"/', $text, $matches);
-		//Unique URLs
-		$uniqueUrls = array_flip(array_flip($matches[1]));
-		if (!empty($uniqueUrls)) {
-			$urlIds = array_combine($uniqueUrls, range(1, count($uniqueUrls)));
-		} else {
-			$urlIds = array();
-		}
-		
-		//Removes PHP tags to prevent them being overwritten
-		$preserve = array();
-		$preserveReplace = array();
-		if (preg_match_all(self::PHP_TAG_REG, $text, $matches)) {
-			foreach ($matches[0] as $k => $match) {
-				$rep = '###PRESERVE' . $k . '###';
-				$preserve[$k] = $match;
-				$preserveReplace[$match] = $rep;
-			}
-			$text = str_replace(array_keys($preserveReplace), $preserveReplace, $text);
-		}	
-		
-		$urlCount = 0;
-		$replace = array(
-			'/([\{\}\$])/' => '\\$1',
-			'@<h[\d]>(.*)<\/h[\d]>@e' => '$eol . $eol . strtoupper("$1") . $eol;',	//Replaces titles
-			'@<dt>(.*)<\/dt>@e' => '$eol . $eol . strtoupper("$1") . $eol;',		//Replaces titles
-			'@<th>(.*)<\/th>@e' => '$eol . $eol . strtoupper("$1") . $eol;',		//Replaces titles
-			'@<dd>(.*)<\/dd>@' => '$1' . $eol,
-			'@<td>(.*)<\/td>@' => '$1' . $eol,
-			'@<tr>(.*)<\/tr>@' => '$1' . $eol,
-			
-			'/(\<img([^>]+)>)/' => '[IMAGE]',
-			'/<a[\s+]href="([^\"]*)"[^>]*>http:(.*)<\/a>/' => '[ $1 ]',
-			'/<a[\s+]href="([^\"]*)"[^>]*>(.*)<\/a>/e' => '"[" . $urlIds["$1"] . "] $2 "',	//
-			'/<li>/' => '- ',													//Removes list items
-			'@<[\/\!]*?[^<>]*?>@si' => '',									//Removes comments
-		);
-		$text = preg_replace(array_keys($replace), $replace, $text);
-		
-		//Removes additional tags
-		$text = strip_tags($text);
-		$text = html_entity_decode($text,ENT_QUOTES);
-		$text = $this->_linewrap($text, 75, $eol);
-		if (!empty($urlIds)) {
-			$text .= $eol . $eol . 'References:' . $eol;
-			foreach ($urlIds as $url => $id) {
-				$text .= sprintf("%s: %s%s", $id, $this->_url($url), $eol);
-			}
-		}
-		$text = preg_replace("/([$eol]{3,})/", $eol . $eol, $text);
-		
-		//Adds preserved tags back in
-		if (!empty($preserveReplace)) {
-			$text = str_replace($preserveReplace, array_keys($preserveReplace), $text);
-		}
-		
-		return stripslashes($text);
+		return EmailFormat::htmlToText($text);
 	}
 	
 	//Formats text for being displayed in Plain-text emails, but then re-formats to be displayed in an HTML page
@@ -199,15 +116,6 @@ class EmailHelper extends AppHelper {
 		return sprintf('<div class="emaildisplay emaildisplay-text"><code>%s</code></div>', nl2br($this->text($text)));
 	}
 		
-	function _linewrap($text, $width, $break = "\n", $cut = false) {
-		$array = explode("\n", $text);
-		$text = "";
-		foreach($array as $key => $val) {
-			$text .= wordwrap($val, $width, $break, $cut);
-			$text .= "\n";
-		}
-		return $text;
-	}
 	
 	function loadHelpers($helpers = array()) {
 		if (!is_array($helpers)) {
@@ -227,24 +135,5 @@ class EmailHelper extends AppHelper {
 			$this->{$helper} = $this->_View->loadHelper($helper);
 		}
 		return $this->{$helper};
-	}
-	
-	//Creates an absolute URL with a removed base
-	private function _url($url) {
-		return Router::url($this->removeUrlBase($url), true);
-	}
-	
-	private function removeUrlBase($url) {
-		if (is_array($url)) {
-			$url['base'] = false;
-		} else {
-			//If webroot is more than "/", remove it from the beginning
-			if ($webroot = substr($this->_View->webroot,0,-1)) {
-				if (strpos($url, $webroot) === 0) {
-					$url = substr($url, strlen($webroot));
-				}
-			}
-		}
-		return $url;
-	}
+	}	
 }
