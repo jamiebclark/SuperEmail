@@ -122,6 +122,10 @@ class EmailFormat {
 		$text = html_entity_decode($text,ENT_QUOTES);
 		$text = self::linewrap($text, self::LINE_WIDTH, self::EOL);
 		$text = self::replaceUrlIds($text, $urlIds);
+		
+		//Removes extra end of line characters
+		$text = preg_replace("/([" . self::EOL . "]{3,})/", self::EOL . self::EOL, $text);
+		
 		$text = self::setPreservedPhp($text, $preservedPhp);
 		
 		return trim(stripslashes($text));
@@ -132,7 +136,8 @@ class EmailFormat {
 		if (preg_match('@<body>[\r\n]*(.*?)[\r\n]*</body>@ms', $text, $matches)) {
 			$text = $matches[1];
 		}
-		return str_replace(array("\t","\n","\r"), '', $text);
+		return $text;
+		//return str_replace(array("\t","\n","\r"), '', $text);
 	}
 	
 /**
@@ -178,7 +183,7 @@ class EmailFormat {
 				$text .= $id . ': ' . self::url($url) . self::EOL;
 			}
 		}
-		return preg_replace("/([" . self::EOL . "]{3,})/", self::EOL . self::EOL, $text);
+		return $text;
 	}
 	
 	public static function url($url) {
