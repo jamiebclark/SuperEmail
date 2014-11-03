@@ -43,11 +43,18 @@ class EmailFormat {
  **/
 	public static  function setAbsoluteUrls($text) {
 		$find = array(
-			'@(<a[^>]+href=")(/)([^\"]*)("[^>]*>)@e',
-			'@(<img[^>]+src=")(/)([^\"]*)("[^>]*>)@e',
+			'@(<a[^>]+href=")(/)([^\"]*)("[^>]*>)@',
+			'@(<img[^>]+src=")(/)([^\"]*)("[^>]*>)@',
 		);
-		$replace = sprintf('"$1%s/$3$4";', Router::fullBaseUrl());
-		return  preg_replace($find, $replace, $text);
+		$out = preg_replace_callback($find, function ($matches) {
+			return sprintf('%s%s/%s%s',
+				$matches[1],
+				Router::fullBaseUrl(),
+				$matches[3],
+				$matches[4]
+			);
+		}, $text);
+		return $out;
 	}
 
 /**
