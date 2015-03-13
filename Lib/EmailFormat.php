@@ -115,15 +115,25 @@ class EmailFormat {
 			'@(<[/]{0,1}(' . implode('|',$blocks) . ')[/]{0,1}>)@ms' => '$1' . self::EOL,
 			'/(\<img([^>]+)>)/' => '[IMAGE]',
 			'/<a[\s+]href="([^\"]*)"[^>]*>http:(.*)<\/a>/' => '[ $1 ]',
-			'/<a[\s+]href="([^\"]*)"[^>]*>(.*)<\/a>/e' => '"[" . $urlIds["$1"] . "] $2 "',	//
-			'/<li>/' => '- ',			//Removes list items
-			'@<\!\-(.*?)\->@ms' => '', //Removes comments
+			//Removes list items
+			'/<li>/' => '- ',
+			//Removes comments
+			'@<\!\-(.*?)\->@ms' => '', 
 		);
-		foreach ($uppers as $tag) {
-			$replace['@(<' . $tag . '>(.*?)</'.$tag.'>)@ems'] = 'self::EOL . strtoupper("$1");';
-		}
+
 		$text = preg_replace(array_keys($replace), $replace, $text);
+
+		$text = preg_replace_callback('/<a[\s+]href="([^\"]*)"[^>]*>(.*)<\/a>/', function($matches) use ($urlIds) {
+			return '[' . $urlIds[$matches[1]] . '] ' . $matches[2] . ' ';
+		}, $text);
 		
+		foreach ($uppers as $tag) {
+			$pattern = '@(<' . $tag . '>(.*?)</'.$tag.'>)@ms';
+			$text = preg_replace_callback($pattern, function($matches) {
+				return self::EOL . strtoupper($matches[1]);
+			}, $text);
+		}
+
 		//Removes additional tags
 		$text = strip_tags($text);
 		$text = html_entity_decode($text,ENT_QUOTES);
