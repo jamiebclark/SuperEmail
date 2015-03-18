@@ -122,7 +122,6 @@ class EmailFormat {
 		);
 
 		$text = preg_replace(array_keys($replace), $replace, $text);
-
 		$text = preg_replace_callback('/<a[\s+]href="([^\"]*)"[^>]*>(.*)<\/a>/', function($matches) use ($urlIds) {
 			return '[' . $urlIds[$matches[1]] . '] ' . $matches[2] . ' ';
 		}, $text);
@@ -139,6 +138,7 @@ class EmailFormat {
 		$text = html_entity_decode($text,ENT_QUOTES);
 		$text = self::linewrap($text, self::LINE_WIDTH, self::EOL);
 		$text = self::replaceUrlIds($text, $urlIds);
+		$text = str_replace("\t", "", $text);
 		
 		//Removes extra end of line characters
 		$text = preg_replace("/([" . self::EOL . "]{3,})/", self::EOL . self::EOL, $text);
