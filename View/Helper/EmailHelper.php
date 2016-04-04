@@ -73,9 +73,13 @@ class EmailHelper extends AppHelper {
 		return $this->Html->image($url, $options);
 	}
 	
-	function link($title, $url, $options = array(), $confirm = null) {
+	public function link($title, $url, $options = array()) {
 		$url = EmailFormat::url($url);
-		return $this->Html->link($title, $url, $options, $confirm);
+		return $this->Html->link($title, $url,[
+			'escape' => false,
+			'title' => 'Empty your shopping cart',
+			'class' => 'btn btn-default',
+		] + $options);
 	}
 
 	public function phpPreview($body) {
