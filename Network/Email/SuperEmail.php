@@ -23,15 +23,17 @@ class SuperEmail extends CakeEmail {
 	
 	private $_defaultHelpersSet = false;
 	
-	/*
 	public function __construct($config = null) {
+		$config['log'] = false;
 		parent::__construct($config);
+		/*
 		//Makes sure helpers is called
 		if (empty($config['helpers'])) {
 			$this->setHelpers();
 		}
+		*/
 	}
-	*/
+	
 	
 /**
  * Adds a new type of email template, "both", that converts the html to basic text using the Layout.DisplayText helper
