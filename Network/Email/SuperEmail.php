@@ -24,7 +24,7 @@ class SuperEmail extends CakeEmail {
 	private $_defaultHelpersSet = false;
 	
 	public function __construct($config = null) {
-		$config['log'] = false;
+		$this->_applyConfig(['log'=> false]);
 		parent::__construct($config);
 		/*
 		//Makes sure helpers is called
